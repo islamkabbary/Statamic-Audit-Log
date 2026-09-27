@@ -1,0 +1,24 @@
+name: tests
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { php: '8.2', laravel: '12.*', statamic: '5.*', testbench: '10.*' }
+          - { php: '8.3', laravel: '12.*', statamic: '6.*', testbench: '10.*' }
+          - { php: '8.4', laravel: '13.*', statamic: '6.*', testbench: '11.*' }
+    name: PHP ${{ matrix.php }} · Laravel ${{ matrix.laravel }} · Statamic ${{ matrix.statamic }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php: ${{ matrix.php }}
+          coverage: none
+      - run: composer require "laravel/framework:${{ matrix.laravel }}" "statamic/cms:${{ matrix.statamic }}" "orchestra/testbench:${{ matrix.testbench }}" --no-update --no-interaction
+      - run: composer update --prefer-dist --no-interaction
+      - run: vendor/bin/phpunit

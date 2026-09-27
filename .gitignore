@@ -1,0 +1,7 @@
+/vendor/
+composer.lock
+.phpunit.cache/
+.phpunit.result.cache
+/tests/Tmp/
+*ScratchTest.php
+/tests/__fixtures__/
