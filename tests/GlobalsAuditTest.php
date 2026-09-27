@@ -10,10 +10,16 @@ class GlobalsAuditTest extends TestCase
     private function makeSet()
     {
         $set = GlobalSet::make('contact')->title('Contact');
-        $set->save();
+        $values = ['phone' => '0100', 'email' => 'info@example.com'];
 
-        $variables = $set->in('default') ?? $set->makeLocalization('default');
-        $variables->data(['phone' => '0100', 'email' => 'info@example.com'])->save();
+        if (method_exists($set, 'addLocalization')) {
+            // Statamic 4/5: a set holds its localizations and saves them itself.
+            $set->addLocalization($set->makeLocalization('default')->data($values))->save();
+        } else {
+            // Statamic 6: values are saved on their own, per site.
+            $set->save();
+            ($set->in('default') ?? $set->makeLocalization('default'))->data($values)->save();
+        }
 
         return GlobalSet::find('contact');
     }
