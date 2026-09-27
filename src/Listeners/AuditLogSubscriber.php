@@ -194,7 +194,7 @@ class AuditLogSubscriber
 
             $this->logger->log($this->entryRecord($entry, 'created', [
                 'changes' => $this->differ->snapshot($this->entryValues($entry), $this->differ->fieldsFromBlueprint($entry->blueprint()), 'new'),
-                'meta' => ['url' => $entry->url(), 'blueprint' => optional($entry->blueprint())->handle()],
+                'meta' => ['url' => $this->urlOf($entry), 'blueprint' => optional($entry->blueprint())->handle()],
             ]));
         });
     }
@@ -242,7 +242,7 @@ class AuditLogSubscriber
 
             $this->logger->log($this->entryRecord($entry, 'deleted', [
                 'changes' => $this->differ->snapshot($this->entryValues($entry), $this->differ->fieldsFromBlueprint($entry->blueprint()), 'old'),
-                'meta' => ['url' => $entry->url(), 'slug' => $entry->slug(), 'blueprint' => optional($entry->blueprint())->handle()],
+                'meta' => ['url' => $this->urlOf($entry), 'slug' => $entry->slug(), 'blueprint' => optional($entry->blueprint())->handle()],
             ]));
         });
     }
@@ -262,6 +262,20 @@ class AuditLogSubscriber
         $values['blueprint'] = $dirty['blueprint'] ?? optional($entry->blueprint())->handle();
 
         return $values;
+    }
+
+    /**
+     * The entry URL, or null when it cannot be built. On Statamic 4 a deleted entry of a
+     * structured collection is already gone from its tree, and url() throws ("routeData() on
+     * null") — which, caught by guard(), would drop the whole "deleted" record.
+     */
+    private function urlOf($entry): ?string
+    {
+        try {
+            return $entry->url();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     private function entryMetaFields(): array

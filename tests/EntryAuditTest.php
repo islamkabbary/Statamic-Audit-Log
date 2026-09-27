@@ -88,6 +88,20 @@ class EntryAuditTest extends TestCase
         $this->assertSame('First title', $record->changes['title']['old']);
     }
 
+    /** Statamic 4 throws from url() once a structured entry is off its tree; the record must survive. */
+    #[Test]
+    public function deleting_an_entry_of_a_structured_collection_is_recorded(): void
+    {
+        Collection::make('pages')->title('Pages')->structureContents(['max_depth' => 3])->save();
+
+        $entry = Entry::make()->collection('pages')->slug('about')->data(['title' => 'About']);
+        $entry->save();
+
+        Entry::find($entry->id())->delete();
+
+        $this->assertSame(['deleted', 'created'], $this->entryRecords()->pluck('action')->all());
+    }
+
     #[Test]
     public function sensitive_fields_are_masked(): void
     {
