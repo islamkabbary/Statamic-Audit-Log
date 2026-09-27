@@ -33,6 +33,14 @@ composer require islamkabbary/statamic-audit-log
 
 That's all: the event subscriber, CP routes, the Tools nav item, the permission, the commands and the prune schedule are registered by the package.
 
+### Deploying
+
+Run `php artisan optimize:clear` after `composer install`, then re-cache if you cache (`php artisan optimize`).
+
+The package is built to survive a stale cache anyway:
+- **Stale route cache:** the Tools › Audit Log item stays hidden until the routes are cached again, instead of breaking the CP nav.
+- **Stale config cache:** the package fills in its own defaults, so sensitive values stay masked.
+
 ### Permission
 
 Super admins always see the screen. For other roles, grant **View Audit Log** (`view audit log`) in the CP under Users › Roles, or in `resources/users/roles.yaml`.

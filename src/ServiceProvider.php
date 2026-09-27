@@ -3,6 +3,7 @@
 namespace IslamKabbary\AuditLog;
 
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Route;
 use IslamKabbary\AuditLog\Audit\AuditDiffer;
 use IslamKabbary\AuditLog\Audit\AuditSnapshots;
 use IslamKabbary\AuditLog\Console\ImportLegacyAdminLog;
@@ -41,7 +42,7 @@ class ServiceProvider extends AddonServiceProvider
     {
         parent::register();
 
-        $this->mergeConfigFrom(__DIR__.'/../config/audit-log.php', 'audit-log');
+        $this->mergeDefaultConfig();
 
         // Request-scoped audit state (before-snapshots, created flags, duplicate guard).
         $this->app->singleton(AuditSnapshots::class);
@@ -58,6 +59,13 @@ class ServiceProvider extends AddonServiceProvider
         });
 
         Nav::extend(function ($nav) {
+            // A route cache built before this package was installed has no audit-log routes, and
+            // ->route() on a missing route would throw while building the nav — breaking every
+            // CP page. Leave the item out until `php artisan route:cache` runs again.
+            if (! Route::has('statamic.cp.audit-log.index')) {
+                return;
+            }
+
             $nav->tools('Audit Log')
                 ->route('audit-log.index')
                 ->icon('history')
@@ -78,6 +86,19 @@ class ServiceProvider extends AddonServiceProvider
                 ->dailyAt(config('audit-log.prune_at', '03:30'))
                 ->withoutOverlapping();
         }
+    }
+
+    /**
+     * mergeConfigFrom() does nothing while the config is cached, so a config cache built before
+     * this package was installed would leave no audit-log keys at all — and with no
+     * sensitive_patterns, passwords and tokens would be stored unmasked. Merge the defaults at
+     * runtime instead, which works cached or not (app values still win, key by key).
+     */
+    private function mergeDefaultConfig(): void
+    {
+        $defaults = require __DIR__.'/../config/audit-log.php';
+
+        config(['audit-log' => array_merge($defaults, (array) config('audit-log', []))]);
     }
 
     private function registerSummaryChannel(): void

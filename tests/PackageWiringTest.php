@@ -18,6 +18,20 @@ class PackageWiringTest extends TestCase
         $this->assertSame('audit-log', config('audit-log.summary_channel'));
     }
 
+    /** A config cache built before the package was installed has no audit-log keys at all. */
+    #[Test]
+    public function defaults_are_restored_when_the_cached_config_lacks_them(): void
+    {
+        config(['audit-log' => ['summary_channel' => 'from-app']]);
+
+        $provider = $this->app->getProvider(\IslamKabbary\AuditLog\ServiceProvider::class);
+        (new \ReflectionMethod($provider, 'mergeDefaultConfig'))->invoke($provider);
+
+        $this->assertNotEmpty(config('audit-log.sensitive_patterns'), 'masking must never silently switch off');
+        $this->assertSame(365, config('audit-log.retention_days'));
+        $this->assertSame('from-app', config('audit-log.summary_channel'), 'app values still win');
+    }
+
     #[Test]
     public function the_summary_channel_is_registered_when_the_app_has_none(): void
     {
